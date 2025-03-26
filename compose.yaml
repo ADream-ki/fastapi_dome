@@ -1,0 +1,78 @@
+name: pynote
+
+services:
+  app:
+    image: pynote-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    pull_policy: never
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    ports:
+      - "8000:8000"
+    volumes:
+      - data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - BROKER_HOST=rabbitmq:5672
+      - REDIS_HOST=redis:6379
+      - SQLITE_DB_PATH=/app/data/pynote.sqlite3
+
+  celery:
+    image: pynote-app:latest
+    pull_policy: never
+    command: celery -A app.core.celery_app worker -l info -Q celery,reminder_queue --autoscale=4,2
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+        restart: true
+    environment:
+      - BROKER_HOST=rabbitmq:5672
+      - REDIS_HOST=redis:6379
+
+  rabbitmq:
+    image: bitnami/rabbitmq:latest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_MANAGEMENT_ALLOW_WEB_ACCESS=true
+    volumes:
+      - rabbitmq_data:/bitnami/rabbitmq/mnesia
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: bitnami/redis:latest
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - redis_data:/bitnami/redis/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local

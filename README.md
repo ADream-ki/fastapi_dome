@@ -1,7 +1,5 @@
 # PyNote
 
-**PyNote** 是一款轻量级的开源笔记应用程序，其灵感源自 [Memos](https://github.com/usememos/memos)。用户可以借助它迅速记录简短笔记、摘录内容或者突发灵感，还能选择性地为笔记添加待办事项和提醒功能。PyNote 以简洁高效为设计理念，运用现代 Python 技术构建了一个简洁的 RESTful API 后端。
-
 ## 技术栈
 
 - **后端框架**：[FastAPI](https://fastapi.tiangolo.com/)（版本 0.115.0 或最新）
